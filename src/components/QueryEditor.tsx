@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { InlineField, Input, Select, MultiSelect, TextArea } from '@grafana/ui';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { JiraDataSource } from '../datasource';
@@ -23,7 +23,7 @@ const intervalOptions: Array<SelectableValue<string>> = [
 
 export function QueryEditor(props: Props) {
   const { query, onChange, onRunQuery, datasource } = props;
-  const q = { ...defaultQuery, ...query } as JiraQuery;
+  const q = useMemo(() => ({ ...defaultQuery, ...query } as JiraQuery), [query]);
 
   const [statusOptions, setStatusOptions] = useState<Array<SelectableValue<string>>>([]);
   const [fieldOptions, setFieldOptions] = useState<Array<SelectableValue<string>>>([]);
