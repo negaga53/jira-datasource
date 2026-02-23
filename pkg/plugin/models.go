@@ -81,12 +81,14 @@ func ParseQuery(q backend.DataQuery) (JiraQuery, error) {
 
 // --- Jira API response types ---
 
-// JiraSearchResponse is the response from /rest/api/{v}/search.
+// JiraSearchResponse is the response from /rest/api/{v}/search/jql.
 type JiraSearchResponse struct {
-	StartAt    int          `json:"startAt"`
-	MaxResults int          `json:"maxResults"`
-	Total      int          `json:"total"`
-	Issues     []JiraIssue  `json:"issues"`
+	StartAt        int         `json:"startAt"`
+	MaxResults     int         `json:"maxResults"`
+	Total          int         `json:"total"`
+	Issues         []JiraIssue `json:"issues"`
+	IsLast         bool        `json:"isLast"`
+	NextPageToken  string      `json:"nextPageToken,omitempty"`
 }
 
 // JiraIssue represents a single Jira issue.

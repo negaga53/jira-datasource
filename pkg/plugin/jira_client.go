@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -154,91 +153,41 @@ func (c *JiraClient) GetMyself(ctx context.Context) (*JiraUser, error) {
 	return &user, nil
 }
 
-// SearchIssues performs a paginated JQL search, fetching all matching issues.
+// SearchIssues performs a paginated JQL search using the /search/jql endpoint, fetching all matching issues.
 func (c *JiraClient) SearchIssues(ctx context.Context, jql string, fields []string, expand []string, maxResults int) ([]JiraIssue, error) {
-	// First page to learn total
-	firstPage, err := c.searchPage(ctx, jql, fields, expand, 0, defaultPageSize)
-	if err != nil {
-		return nil, err
-	}
+	var allIssues []JiraIssue
+	nextPageToken := ""
 
-	total := firstPage.Total
-	if maxResults > 0 && total > maxResults {
-		total = maxResults
-	}
-
-	if total <= defaultPageSize {
-		return firstPage.Issues[:min(len(firstPage.Issues), total)], nil
-	}
-
-	// Fetch remaining pages concurrently
-	allIssues := make([]JiraIssue, 0, total)
-	allIssues = append(allIssues, firstPage.Issues...)
-
-	remaining := total - defaultPageSize
-	var pages []int
-	for startAt := defaultPageSize; remaining > 0; startAt += defaultPageSize {
-		pages = append(pages, startAt)
-		remaining -= defaultPageSize
-	}
-
-	type pageResult struct {
-		startAt int
-		issues  []JiraIssue
-		err     error
-	}
-
-	results := make(chan pageResult, len(pages))
-	sem := make(chan struct{}, c.maxConcurrent)
-
-	var wg sync.WaitGroup
-	for _, startAt := range pages {
-		wg.Add(1)
-		go func(sa int) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
-			resp, err := c.searchPage(ctx, jql, fields, expand, sa, defaultPageSize)
-			if err != nil {
-				results <- pageResult{startAt: sa, err: err}
-				return
-			}
-			results <- pageResult{startAt: sa, issues: resp.Issues}
-		}(startAt)
-	}
-
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	// Collect results in order
-	pageMap := make(map[int][]JiraIssue)
-	for r := range results {
-		if r.err != nil {
-			return nil, fmt.Errorf("fetch page at %d: %w", r.startAt, r.err)
+	for {
+		resp, err := c.searchPage(ctx, jql, fields, expand, nextPageToken, defaultPageSize)
+		if err != nil {
+			return nil, err
 		}
-		pageMap[r.startAt] = r.issues
-	}
 
-	for _, startAt := range pages {
-		allIssues = append(allIssues, pageMap[startAt]...)
-	}
+		allIssues = append(allIssues, resp.Issues...)
 
-	if len(allIssues) > total {
-		allIssues = allIssues[:total]
+		if maxResults > 0 && len(allIssues) >= maxResults {
+			allIssues = allIssues[:maxResults]
+			break
+		}
+
+		if resp.IsLast || resp.NextPageToken == "" {
+			break
+		}
+		nextPageToken = resp.NextPageToken
 	}
 
 	return allIssues, nil
 }
 
-// searchPage fetches a single page of search results.
-func (c *JiraClient) searchPage(ctx context.Context, jql string, fields []string, expand []string, startAt, maxResults int) (*JiraSearchResponse, error) {
+// searchPage fetches a single page of search results using the enhanced /search/jql endpoint.
+func (c *JiraClient) searchPage(ctx context.Context, jql string, fields []string, expand []string, nextPageToken string, maxResults int) (*JiraSearchResponse, error) {
 	params := url.Values{
 		"jql":        {jql},
-		"startAt":    {strconv.Itoa(startAt)},
 		"maxResults": {strconv.Itoa(maxResults)},
+	}
+	if nextPageToken != "" {
+		params.Set("nextPageToken", nextPageToken)
 	}
 	if len(fields) > 0 {
 		params.Set("fields", strings.Join(fields, ","))
@@ -247,7 +196,7 @@ func (c *JiraClient) searchPage(ctx context.Context, jql string, fields []string
 		params.Set("expand", strings.Join(expand, ","))
 	}
 
-	data, err := c.Get(ctx, "/search", params)
+	data, err := c.Get(ctx, "/search/jql", params)
 	if err != nil {
 		return nil, err
 	}
