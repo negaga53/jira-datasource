@@ -1,21 +1,15 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { readFileSync } from 'fs';
-import { Configuration } from 'webpack';
-import CopyWebpackPlugin from 'copy-webpack-plugin';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import ReplaceInFileWebpackPlugin from 'replace-in-file-webpack-plugin';
-import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
+const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const ReplaceInFileWebpackPlugin = require('replace-in-file-webpack-plugin');
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+const packageJson = require('../../package.json');
 
-const currentFilename = fileURLToPath(import.meta.url);
-const packageJson = JSON.parse(readFileSync(path.join(process.cwd(), 'package.json'), 'utf-8'));
-
-const config = (env: { production?: boolean }): Configuration => ({
+/** @type {(env: Record<string, boolean>) => import('webpack').Configuration} */
+module.exports = (env) => ({
   cache: {
     type: 'filesystem',
     buildDependencies: {
-      config: [currentFilename],
+      config: [__filename],
     },
   },
   context: path.join(process.cwd(), 'src'),
@@ -43,7 +37,7 @@ const config = (env: { production?: boolean }): Configuration => ({
     '@grafana/ui',
     '@grafana/runtime',
     '@grafana/e2e-selectors',
-    function (data: { request?: string }, callback: (err?: Error | null, result?: string) => void) {
+    function (data, callback) {
       const prefix = 'grafana/';
       const request = data.request || '';
       if (request.indexOf(prefix) === 0) {
@@ -74,18 +68,18 @@ const config = (env: { production?: boolean }): Configuration => ({
         test: /\.(png|jpe?g|gif|svg)$/,
         type: 'asset/resource',
         generator: {
-          publicPath: `public/plugins/jira-datasource/`,
+          publicPath: 'public/plugins/jira-datasource/',
           outputPath: 'img/',
-          filename: Boolean(env.production) ? '[hash][ext]' : '[name][ext]',
+          filename: env.production ? '[hash][ext]' : '[name][ext]',
         },
       },
       {
         test: /\.(woff|woff2|eot|ttf|otf)(\?v=\d+\.\d+\.\d+)?$/,
         type: 'asset/resource',
         generator: {
-          publicPath: `public/plugins/jira-datasource/`,
+          publicPath: 'public/plugins/jira-datasource/',
           outputPath: 'fonts/',
-          filename: Boolean(env.production) ? '[hash][ext]' : '[name][ext]',
+          filename: env.production ? '[hash][ext]' : '[name][ext]',
         },
       },
     ],
@@ -113,7 +107,7 @@ const config = (env: { production?: boolean }): Configuration => ({
       ],
     }),
     new ForkTsCheckerWebpackPlugin({
-      async: Boolean(!env.production),
+      async: !env.production,
       issue: {
         include: [{ file: '**/*.{ts,tsx}' }],
       },
@@ -141,5 +135,3 @@ const config = (env: { production?: boolean }): Configuration => ({
     unsafeCache: true,
   },
 });
-
-export default config;
