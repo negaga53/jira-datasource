@@ -4,3 +4,4 @@ coverage/
 .cache/
 *.local
 .DS_Store
+.eslintcache

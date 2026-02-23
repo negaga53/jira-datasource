@@ -43,18 +43,6 @@ jobs:
       - name: Build backend (linux/amd64)
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/gpx_jira-datasource_linux_amd64 ./pkg
 
-      - name: Build backend (linux/arm64)
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o dist/gpx_jira-datasource_linux_arm64 ./pkg
-
-      - name: Build backend (darwin/amd64)
-        run: CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o dist/gpx_jira-datasource_darwin_amd64 ./pkg
-
-      - name: Build backend (darwin/arm64)
-        run: CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o dist/gpx_jira-datasource_darwin_arm64 ./pkg
-
-      - name: Build backend (windows/amd64)
-        run: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o dist/gpx_jira-datasource_windows_amd64.exe ./pkg
-
       - name: Package plugin
         run: |
           cd dist

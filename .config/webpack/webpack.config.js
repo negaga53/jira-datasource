@@ -14,7 +14,7 @@ module.exports = (env) => ({
   },
   context: path.join(process.cwd(), 'src'),
   devtool: env.production ? 'source-map' : 'eval-source-map',
-  entry: './module.ts',
+  entry: { module: './module.ts' },
   externals: [
     'lodash',
     'jquery',

@@ -30,11 +30,11 @@ export function QueryEditor(props: Props) {
 
   // Load statuses and fields from backend
   useEffect(() => {
-    datasource.getResource<SelectOption[]>('/statuses').then((opts) => {
+    datasource.getResource<SelectOption[]>('statuses').then((opts) => {
       setStatusOptions((opts || []).map((o) => ({ label: o.label, value: o.value })));
     }).catch(() => {});
 
-    datasource.getResource<SelectOption[]>('/fields').then((opts) => {
+    datasource.getResource<SelectOption[]>('fields').then((opts) => {
       setFieldOptions((opts || []).map((o) => ({ label: o.label, value: o.value })));
     }).catch(() => {});
   }, [datasource]);
