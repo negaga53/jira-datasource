@@ -1,0 +1,151 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "jira-datasource",
+        "uid": "${DS_JIRA}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "title": "Total Open Issues",
+      "type": "stat",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "jql_search",
+          "jql": "project = $project AND status != Done"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "jira-datasource",
+        "uid": "${DS_JIRA}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 2,
+      "options": {},
+      "title": "Issues Created Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "issue_count",
+          "jql": "project = $project AND created >= -30d",
+          "interval": "1d"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "jira-datasource",
+        "uid": "${DS_JIRA}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 3,
+      "options": {},
+      "title": "Cycle Time (In Progress → Done)",
+      "type": "table",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "cycle_time",
+          "jql": "project = $project AND status = Done",
+          "startStatus": "In Progress",
+          "endStatus": "Done",
+          "quantile": 85
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "jira-datasource",
+        "uid": "${DS_JIRA}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+      "id": 4,
+      "options": {},
+      "title": "Issue List",
+      "type": "table",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "jql_search",
+          "jql": "project = $project ORDER BY updated DESC"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "jira-datasource",
+          "uid": "${DS_JIRA}"
+        },
+        "definition": "",
+        "name": "project",
+        "query": {
+          "queryType": "projects"
+        },
+        "refresh": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "title": "Jira Overview",
+  "uid": "jira-overview",
+  "version": 1,
+  "__inputs": [
+    {
+      "name": "DS_JIRA",
+      "label": "Jira",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "jira-datasource",
+      "pluginName": "Jira"
+    }
+  ]
+}

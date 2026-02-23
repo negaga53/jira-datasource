@@ -1,0 +1,33 @@
+{
+  "type": "datasource",
+  "name": "Jira",
+  "id": "jira-datasource",
+  "backend": true,
+  "executable": "gpx_jira-datasource",
+  "alerting": true,
+  "metrics": true,
+  "logs": true,
+  "info": {
+    "description": "Jira datasource for Grafana — query issues, changelogs, cycle time, and more via JQL",
+    "author": {
+      "name": "jira-datasource contributors"
+    },
+    "keywords": ["jira", "atlassian", "datasource", "jql", "agile"],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "version": "1.0.0"
+  },
+  "dependencies": {
+    "grafanaDependency": ">=10.0.0",
+    "plugins": []
+  },
+  "includes": [
+    {
+      "type": "dashboard",
+      "name": "Jira Overview",
+      "path": "dashboards/overview.json"
+    }
+  ]
+}

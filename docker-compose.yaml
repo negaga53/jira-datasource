@@ -1,0 +1,12 @@
+services:
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./dist:/var/lib/grafana/plugins/jira-datasource
+      - ./provisioning:/etc/grafana/provisioning
+    environment:
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: jira-datasource
+      GF_LOG_LEVEL: debug
+      GF_DEFAULT_APP_MODE: development
