@@ -2,9 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -39,11 +41,27 @@ jobs:
         run: go test -v ./pkg/...
 
       - name: Build backend (linux/amd64)
-        run: |
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/gpx_jira-datasource_linux_amd64 ./pkg
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/gpx_jira-datasource_linux_amd64 ./pkg
 
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
+      - name: Build backend (linux/arm64)
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o dist/gpx_jira-datasource_linux_arm64 ./pkg
+
+      - name: Build backend (darwin/amd64)
+        run: CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o dist/gpx_jira-datasource_darwin_amd64 ./pkg
+
+      - name: Build backend (darwin/arm64)
+        run: CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o dist/gpx_jira-datasource_darwin_arm64 ./pkg
+
+      - name: Build backend (windows/amd64)
+        run: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o dist/gpx_jira-datasource_windows_amd64.exe ./pkg
+
+      - name: Package plugin
+        run: |
+          cd dist
+          zip -r ../jira-datasource-${{ github.ref_name }}.zip .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: jira-datasource-dist
-          path: dist/
+          files: jira-datasource-${{ github.ref_name }}.zip
+          generate_release_notes: true
