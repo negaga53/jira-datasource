@@ -307,3 +307,102 @@ func TestParseInterval(t *testing.T) {
 		t.Errorf("parseInterval('') = %v", got)
 	}
 }
+
+func TestExtractFieldValue(t *testing.T) {
+	fields := map[string]interface{}{
+		"summary":       "Test issue",
+		"story_points":  float64(5),
+		"flagged":       true,
+		"status":        map[string]interface{}{"name": "Open"},
+		"assignee":      map[string]interface{}{"displayName": "Jane"},
+		"custom_select": map[string]interface{}{"value": "Option A"},
+		"labels":        []interface{}{"bug", "urgent"},
+		"components":    []interface{}{map[string]interface{}{"name": "Backend"}, map[string]interface{}{"name": "Frontend"}},
+	}
+
+	tests := []struct {
+		key  string
+		want string
+	}{
+		{"summary", "Test issue"},
+		{"story_points", "5"},
+		{"flagged", "true"},
+		{"status", "Open"},
+		{"assignee", "Jane"},
+		{"custom_select", "Option A"},
+		{"labels", "bug, urgent"},
+		{"components", "Backend, Frontend"},
+		{"missing", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.key, func(t *testing.T) {
+			got := extractFieldValue(fields, tt.key)
+			if got != tt.want {
+				t.Errorf("extractFieldValue(%q) = %q, want %q", tt.key, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParseQueryNewTypes(t *testing.T) {
+	tests := []struct {
+		name  string
+		json  string
+		check func(t *testing.T, q JiraQuery)
+	}{
+		{
+			name: "velocity query with story points",
+			json: `{"queryType":"velocity","jql":"project = TEST","storyPointField":"customfield_10001","interval":"1w"}`,
+			check: func(t *testing.T, q JiraQuery) {
+				if q.QueryType != QueryTypeVelocity {
+					t.Errorf("QueryType = %q, want %q", q.QueryType, QueryTypeVelocity)
+				}
+				if q.StoryPointField != "customfield_10001" {
+					t.Errorf("StoryPointField = %q", q.StoryPointField)
+				}
+			},
+		},
+		{
+			name: "cfd query",
+			json: `{"queryType":"cfd","jql":"project = TEST","interval":"1d"}`,
+			check: func(t *testing.T, q JiraQuery) {
+				if q.QueryType != QueryTypeCFD {
+					t.Errorf("QueryType = %q, want %q", q.QueryType, QueryTypeCFD)
+				}
+			},
+		},
+		{
+			name: "sprint burndown query",
+			json: `{"queryType":"sprint_burndown","sprintId":42,"boardId":10,"doneStatuses":["10001","10002"]}`,
+			check: func(t *testing.T, q JiraQuery) {
+				if q.QueryType != QueryTypeSprintBurndown {
+					t.Errorf("QueryType = %q, want %q", q.QueryType, QueryTypeSprintBurndown)
+				}
+				if q.SprintID != 42 {
+					t.Errorf("SprintID = %d, want 42", q.SprintID)
+				}
+				if q.BoardID != 10 {
+					t.Errorf("BoardID = %d, want 10", q.BoardID)
+				}
+				if len(q.DoneStatuses) != 2 {
+					t.Errorf("DoneStatuses = %v, want 2 items", q.DoneStatuses)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dq := backend.DataQuery{
+				RefID: "A",
+				JSON:  json.RawMessage(tt.json),
+			}
+			q, err := ParseQuery(dq)
+			if err != nil {
+				t.Fatalf("ParseQuery() error = %v", err)
+			}
+			tt.check(t, q)
+		})
+	}
+}

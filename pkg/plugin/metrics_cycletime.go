@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"sync"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -25,50 +24,8 @@ func (d *Datasource) handleCycleTime(ctx context.Context, query JiraQuery, _ bac
 	}
 
 	// For issues without inline changelog, fetch separately
-	type indexed struct {
-		idx   int
-		issue JiraIssue
-	}
-
-	var needChangelog []indexed
-	for i, issue := range issues {
-		if issue.Changelog == nil || issue.Changelog.Total > issue.Changelog.MaxResults {
-			needChangelog = append(needChangelog, indexed{idx: i, issue: issue})
-		}
-	}
-
-	if len(needChangelog) > 0 {
-		sem := make(chan struct{}, d.jiraClient.maxConcurrent)
-		var mu sync.Mutex
-		var fetchErr error
-
-		var wg sync.WaitGroup
-		for _, item := range needChangelog {
-			wg.Add(1)
-			go func(it indexed) {
-				defer wg.Done()
-				sem <- struct{}{}
-				defer func() { <-sem }()
-
-				histories, err := d.jiraClient.GetIssueChangelog(ctx, it.issue.Key)
-				mu.Lock()
-				defer mu.Unlock()
-				if err != nil {
-					if fetchErr == nil {
-						fetchErr = err
-					}
-					return
-				}
-				if issues[it.idx].Changelog == nil {
-					issues[it.idx].Changelog = &JiraChangelog{}
-				}
-				issues[it.idx].Changelog.Histories = histories
-			}(item)
-		}
-		wg.Wait()
-		if fetchErr != nil {
-			return nil, fmt.Errorf("fetch changelogs: %w", fetchErr)
-		}
+	if err := d.fetchMissingChangelogs(ctx, issues); err != nil {
+		return nil, fmt.Errorf("fetch changelogs: %w", err)
 	}
 
 	// Compute cycle times

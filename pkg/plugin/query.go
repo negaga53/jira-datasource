@@ -31,6 +31,12 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 			frames, err = d.handleChangelog(ctx, query, q.TimeRange)
 		case QueryTypeWorklog:
 			frames, err = d.handleWorklog(ctx, query, q.TimeRange)
+		case QueryTypeVelocity:
+			frames, err = d.handleVelocity(ctx, query, q.TimeRange)
+		case QueryTypeCFD:
+			frames, err = d.handleCFD(ctx, query, q.TimeRange)
+		case QueryTypeSprintBurndown:
+			frames, err = d.handleSprintBurndown(ctx, query, q.TimeRange)
 		default:
 			err = fmt.Errorf("unsupported query type: %s", query.QueryType)
 		}

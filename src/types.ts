@@ -6,6 +6,9 @@ export enum QueryType {
   CYCLE_TIME = 'cycle_time',
   CHANGELOG = 'changelog',
   WORKLOG = 'worklog',
+  VELOCITY = 'velocity',
+  CFD = 'cfd',
+  SPRINT_BURNDOWN = 'sprint_burndown',
 }
 
 export interface JiraQuery extends DataQuery {
@@ -18,6 +21,10 @@ export interface JiraQuery extends DataQuery {
   fields?: string[];
   expand?: string[];
   maxResults?: number;
+  storyPointField?: string;
+  boardId?: number;
+  sprintId?: number;
+  doneStatuses?: string[];
 }
 
 export const defaultQuery: Partial<JiraQuery> = {
@@ -45,6 +52,7 @@ export interface SelectOption {
 }
 
 export interface VariableQuery {
-  queryType: 'projects' | 'statuses' | 'fields' | 'issuetypes' | 'labels';
+  queryType: 'projects' | 'statuses' | 'fields' | 'issuetypes' | 'labels' | 'boards' | 'sprints';
   projectKey?: string;
+  boardId?: string;
 }

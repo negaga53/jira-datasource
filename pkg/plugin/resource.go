@@ -2,7 +2,9 @@ package plugin
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
@@ -15,6 +17,8 @@ func (d *Datasource) registerRoutes() *http.ServeMux {
 	mux.HandleFunc("/statuses", d.handleStatuses)
 	mux.HandleFunc("/fields", d.handleFields)
 	mux.HandleFunc("/issuetypes", d.handleIssueTypes)
+	mux.HandleFunc("/boards", d.handleBoards)
+	mux.HandleFunc("/sprints", d.handleSprints)
 	return mux
 }
 
@@ -130,4 +134,67 @@ func (d *Datasource) handleIssueTypes(w http.ResponseWriter, r *http.Request) {
 func writeJSON(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(data)
+}
+
+func (d *Datasource) handleBoards(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if cached, ok := d.cache.Get("boards"); ok {
+		writeJSON(w, cached)
+		return
+	}
+
+	boards, err := d.jiraClient.GetBoards(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	options := make([]SelectOption, len(boards))
+	for i, b := range boards {
+		options[i] = SelectOption{
+			Value: fmt.Sprintf("%d", b.ID),
+			Label: fmt.Sprintf("%s (%s)", b.Name, b.Type),
+		}
+	}
+
+	d.cache.Set("boards", options)
+	writeJSON(w, options)
+}
+
+func (d *Datasource) handleSprints(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	boardIDStr := r.URL.Query().Get("board")
+	if boardIDStr == "" {
+		http.Error(w, "board query parameter is required", http.StatusBadRequest)
+		return
+	}
+	boardID, err := strconv.Atoi(boardIDStr)
+	if err != nil {
+		http.Error(w, "invalid board ID", http.StatusBadRequest)
+		return
+	}
+
+	cacheKey := fmt.Sprintf("sprints:%d", boardID)
+	if cached, ok := d.cache.Get(cacheKey); ok {
+		writeJSON(w, cached)
+		return
+	}
+
+	sprints, err := d.jiraClient.GetSprints(ctx, boardID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var options []SelectOption
+	for _, s := range sprints {
+		options = append(options, SelectOption{
+			Value: fmt.Sprintf("%d", s.ID),
+			Label: fmt.Sprintf("%s (%s)", s.Name, s.State),
+		})
+	}
+
+	d.cache.Set(cacheKey, options)
+	writeJSON(w, options)
 }

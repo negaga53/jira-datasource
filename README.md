@@ -9,7 +9,10 @@ A Grafana backend datasource plugin that connects to Jira Cloud/Server via REST 
 - **Cycle Time** — Measure duration between status transitions (agile metrics)
 - **Changelog** — Audit trail of field changes across issues
 - **Worklog** — Time tracking data per issue and author
-- **Template Variables** — Dynamic dashboards with project, status, and field selectors
+- **Velocity / Throughput** — Resolved issues or story points per time interval
+- **Flow Load (CFD)** — Cumulative Flow Diagram showing issue count or story points per status over time
+- **Sprint Burndown** — Remaining work vs ideal burndown line for a sprint
+- **Template Variables** — Dynamic dashboards with project, status, field, board, and sprint selectors
 - **Server-side Caching** — Configurable TTL to reduce API calls
 - **Alerting Support** — Backend queries compatible with Grafana alerting
 
@@ -65,6 +68,9 @@ Open Grafana at http://localhost:3000 and add the Jira datasource.
 | Cycle Time | Table | Agile metrics, scatter plots |
 | Changelog | Table | Audit logs, flow analysis |
 | Worklog | Table | Time tracking |
+| Velocity / Throughput | Time Series | Resolved issues or story points per interval |
+| Flow Load (CFD) | Time Series (stacked) | Cumulative flow diagram by status |
+| Sprint Burndown | Time Series | Remaining vs ideal work in a sprint |
 
 ### Template Variables
 
@@ -73,6 +79,8 @@ Use the variable query editor with these functions:
 - `statuses()` — All available statuses
 - `fields()` — All field names
 - `issuetypes(PROJECT_KEY)` — Issue types for a project
+- `boards()` — All Jira Agile boards
+- `sprints(BOARD_ID)` — Sprints for a board
 
 ## Building
 

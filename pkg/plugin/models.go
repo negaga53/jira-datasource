@@ -12,11 +12,14 @@ import (
 type QueryType string
 
 const (
-	QueryTypeJQLSearch  QueryType = "jql_search"
-	QueryTypeIssueCount QueryType = "issue_count"
-	QueryTypeCycleTime  QueryType = "cycle_time"
-	QueryTypeChangelog  QueryType = "changelog"
-	QueryTypeWorklog    QueryType = "worklog"
+	QueryTypeJQLSearch      QueryType = "jql_search"
+	QueryTypeIssueCount     QueryType = "issue_count"
+	QueryTypeCycleTime      QueryType = "cycle_time"
+	QueryTypeChangelog      QueryType = "changelog"
+	QueryTypeWorklog        QueryType = "worklog"
+	QueryTypeVelocity       QueryType = "velocity"
+	QueryTypeCFD            QueryType = "cfd"
+	QueryTypeSprintBurndown QueryType = "sprint_burndown"
 )
 
 // JiraSettings holds the parsed datasource configuration.
@@ -51,16 +54,20 @@ func ParseSettings(s backend.DataSourceInstanceSettings) (JiraSettings, error) {
 
 // JiraQuery represents a single query from the frontend.
 type JiraQuery struct {
-	RefID       string    `json:"refId"`
-	QueryType   QueryType `json:"queryType"`
-	JQL         string    `json:"jql"`
-	StartStatus string    `json:"startStatus,omitempty"`
-	EndStatus   string    `json:"endStatus,omitempty"`
-	Quantile    float64   `json:"quantile,omitempty"`
-	Interval    string    `json:"interval,omitempty"`
-	Fields      []string  `json:"fields,omitempty"`
-	Expand      []string  `json:"expand,omitempty"`
-	MaxResults  int       `json:"maxResults,omitempty"`
+	RefID           string    `json:"refId"`
+	QueryType       QueryType `json:"queryType"`
+	JQL             string    `json:"jql"`
+	StartStatus     string    `json:"startStatus,omitempty"`
+	EndStatus       string    `json:"endStatus,omitempty"`
+	Quantile        float64   `json:"quantile,omitempty"`
+	Interval        string    `json:"interval,omitempty"`
+	Fields          []string  `json:"fields,omitempty"`
+	Expand          []string  `json:"expand,omitempty"`
+	MaxResults      int       `json:"maxResults,omitempty"`
+	StoryPointField string    `json:"storyPointField,omitempty"`
+	BoardID         int       `json:"boardId,omitempty"`
+	SprintID        int       `json:"sprintId,omitempty"`
+	DoneStatuses    []string  `json:"doneStatuses,omitempty"`
 }
 
 // ParseQuery deserializes a backend.DataQuery into a JiraQuery.
@@ -151,9 +158,17 @@ type JiraField struct {
 
 // JiraStatus represents a Jira status.
 type JiraStatus struct {
-	ID               string `json:"id"`
-	Name             string `json:"name"`
-	UntranslatedName string `json:"untranslatedName,omitempty"`
+	ID               string             `json:"id"`
+	Name             string             `json:"name"`
+	UntranslatedName string             `json:"untranslatedName,omitempty"`
+	StatusCategory   JiraStatusCategory `json:"statusCategory,omitempty"`
+}
+
+// JiraStatusCategory represents a Jira status category.
+type JiraStatusCategory struct {
+	ID   int    `json:"id"`
+	Key  string `json:"key"`
+	Name string `json:"name"`
 }
 
 // JiraIssueType represents a Jira issue type.
@@ -195,4 +210,41 @@ type CycleTimeRecord struct {
 type SelectOption struct {
 	Value string `json:"value"`
 	Label string `json:"label"`
+}
+
+// --- Jira Agile API types ---
+
+// JiraBoard represents a Jira Agile board.
+type JiraBoard struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+// JiraBoardResponse is the response from the boards endpoint.
+type JiraBoardResponse struct {
+	MaxResults int         `json:"maxResults"`
+	StartAt    int         `json:"startAt"`
+	Total      int         `json:"total"`
+	IsLast     bool        `json:"isLast"`
+	Values     []JiraBoard `json:"values"`
+}
+
+// JiraSprint represents a Jira sprint.
+type JiraSprint struct {
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	State        string `json:"state"`
+	StartDate    string `json:"startDate,omitempty"`
+	EndDate      string `json:"endDate,omitempty"`
+	CompleteDate string `json:"completeDate,omitempty"`
+}
+
+// JiraSprintResponse is the response from the sprints endpoint.
+type JiraSprintResponse struct {
+	MaxResults int          `json:"maxResults"`
+	StartAt    int          `json:"startAt"`
+	Total      int          `json:"total"`
+	IsLast     bool         `json:"isLast"`
+	Values     []JiraSprint `json:"values"`
 }

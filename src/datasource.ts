@@ -46,6 +46,12 @@ export class JiraDataSource extends DataSourceWithBackend<JiraQuery, JiraDataSou
       case 'labels':
         path = 'fields';
         break;
+      case 'boards':
+        path = 'boards';
+        break;
+      case 'sprints':
+        path = `sprints?board=${encodeURIComponent(query.boardId || '')}`;
+        break;
       default:
         return [];
     }

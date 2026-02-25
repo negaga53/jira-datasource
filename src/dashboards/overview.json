@@ -110,6 +110,84 @@
           "jql": "project = $project ORDER BY updated DESC"
         }
       ]
+    },
+    {
+      "datasource": {
+        "type": "jira-datasource",
+        "uid": "${DS_JIRA}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "id": 5,
+      "options": {},
+      "title": "Velocity / Throughput",
+      "type": "timeseries",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "velocity",
+          "jql": "project = $project AND status = Done",
+          "interval": "1w"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "jira-datasource",
+        "uid": "${DS_JIRA}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "stacking": {
+              "mode": "normal"
+            },
+            "fillOpacity": 80,
+            "lineWidth": 1
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "id": 6,
+      "options": {},
+      "title": "Flow Load (CFD)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "cfd",
+          "jql": "project = $project",
+          "interval": "1d"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "jira-datasource",
+        "uid": "${DS_JIRA}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "id": 7,
+      "options": {},
+      "title": "Sprint Burndown",
+      "type": "timeseries",
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "sprint_burndown",
+          "jql": "",
+          "sprintId": 0,
+          "boardId": 0
+        }
+      ]
     }
   ],
   "schemaVersion": 39,

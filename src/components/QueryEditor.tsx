@@ -12,6 +12,9 @@ const queryTypeOptions: Array<SelectableValue<QueryType>> = [
   { label: 'Cycle Time', value: QueryType.CYCLE_TIME, description: 'Compute cycle time between two statuses' },
   { label: 'Changelog', value: QueryType.CHANGELOG, description: 'Raw changelog entries for matching issues' },
   { label: 'Worklog', value: QueryType.WORKLOG, description: 'Worklogs for matching issues' },
+  { label: 'Velocity / Throughput', value: QueryType.VELOCITY, description: 'Issues or story points resolved per interval' },
+  { label: 'Flow Load (CFD)', value: QueryType.CFD, description: 'Cumulative flow diagram: issues per status over time' },
+  { label: 'Sprint Burndown', value: QueryType.SPRINT_BURNDOWN, description: 'Sprint burndown chart with ideal line' },
 ];
 
 const intervalOptions: Array<SelectableValue<string>> = [
@@ -27,6 +30,8 @@ export function QueryEditor(props: Props) {
 
   const [statusOptions, setStatusOptions] = useState<Array<SelectableValue<string>>>([]);
   const [fieldOptions, setFieldOptions] = useState<Array<SelectableValue<string>>>([]);
+  const [boardOptions, setBoardOptions] = useState<Array<SelectableValue<string>>>([]);
+  const [sprintOptions, setSprintOptions] = useState<Array<SelectableValue<string>>>([]);
 
   // Load statuses and fields from backend
   useEffect(() => {
@@ -37,7 +42,25 @@ export function QueryEditor(props: Props) {
     datasource.getResource<SelectOption[]>('fields').then((opts) => {
       setFieldOptions((opts || []).map((o) => ({ label: o.label, value: o.value })));
     }).catch(() => {});
+
+    datasource.getResource<SelectOption[]>('boards').then((opts) => {
+      setBoardOptions((opts || []).map((o) => ({ label: o.label, value: o.value })));
+    }).catch(() => {});
   }, [datasource]);
+
+  // Load sprints when board changes
+  useEffect(() => {
+    if (q.boardId) {
+      datasource
+        .getResource<SelectOption[]>('sprints', { board: String(q.boardId) })
+        .then((opts) => {
+          setSprintOptions((opts || []).map((o) => ({ label: o.label, value: o.value })));
+        })
+        .catch(() => setSprintOptions([]));
+    } else {
+      setSprintOptions([]);
+    }
+  }, [datasource, q.boardId]);
 
   const onFieldChange = useCallback(
     <K extends keyof JiraQuery>(key: K, value: JiraQuery[K]) => {
@@ -146,6 +169,103 @@ export function QueryEditor(props: Props) {
             isClearable
           />
         </InlineField>
+      )}
+
+      {/* Velocity / Throughput fields */}
+      {q.queryType === QueryType.VELOCITY && (
+        <>
+          <InlineField label="Interval" labelWidth={16} tooltip="Time interval for bucketing">
+            <Select
+              width={20}
+              options={intervalOptions}
+              value={intervalOptions.find((o) => o.value === (q.interval || '1w'))}
+              onChange={(v) => onFieldChange('interval', v.value || '1w')}
+            />
+          </InlineField>
+          <InlineField label="Story Point Field" labelWidth={16} tooltip="Custom field for story points (optional, leave empty for count only)">
+            <Select
+              width={40}
+              options={fieldOptions}
+              value={fieldOptions.find((o) => o.value === q.storyPointField)}
+              onChange={(v) => onFieldChange('storyPointField', v.value || '')}
+              isClearable
+              placeholder="Select story point field..."
+            />
+          </InlineField>
+        </>
+      )}
+
+      {/* CFD fields */}
+      {q.queryType === QueryType.CFD && (
+        <>
+          <InlineField label="Interval" labelWidth={16} tooltip="Time interval for status snapshots">
+            <Select
+              width={20}
+              options={intervalOptions}
+              value={intervalOptions.find((o) => o.value === (q.interval || '1d'))}
+              onChange={(v) => onFieldChange('interval', v.value || '1d')}
+            />
+          </InlineField>
+          <InlineField label="Story Point Field" labelWidth={16} tooltip="Use story points instead of issue count (optional)">
+            <Select
+              width={40}
+              options={fieldOptions}
+              value={fieldOptions.find((o) => o.value === q.storyPointField)}
+              onChange={(v) => onFieldChange('storyPointField', v.value || '')}
+              isClearable
+              placeholder="Count by issues (default)"
+            />
+          </InlineField>
+        </>
+      )}
+
+      {/* Sprint Burndown fields */}
+      {q.queryType === QueryType.SPRINT_BURNDOWN && (
+        <>
+          <InlineField label="Board" labelWidth={16} tooltip="Jira Agile board">
+            <Select
+              width={40}
+              options={boardOptions}
+              value={boardOptions.find((o) => o.value === String(q.boardId || ''))}
+              onChange={(v) => onFieldChange('boardId', parseInt(v.value || '0', 10) || undefined)}
+              isClearable
+              placeholder="Select board..."
+            />
+          </InlineField>
+          <InlineField label="Sprint" labelWidth={16} tooltip="Sprint to chart">
+            <Select
+              width={40}
+              options={sprintOptions}
+              value={sprintOptions.find((o) => o.value === String(q.sprintId || ''))}
+              onChange={(v) => onFieldChange('sprintId', parseInt(v.value || '0', 10) || undefined)}
+              isClearable
+              placeholder="Select sprint..."
+            />
+          </InlineField>
+          <InlineField label="Story Point Field" labelWidth={16} tooltip="Use story points instead of issue count (optional)">
+            <Select
+              width={40}
+              options={fieldOptions}
+              value={fieldOptions.find((o) => o.value === q.storyPointField)}
+              onChange={(v) => onFieldChange('storyPointField', v.value || '')}
+              isClearable
+              placeholder="Count by issues (default)"
+            />
+          </InlineField>
+          <InlineField label="Done Statuses" labelWidth={16} tooltip="Statuses that count as done (auto-detected if empty)">
+            <MultiSelect
+              width={40}
+              options={statusOptions}
+              value={(q.doneStatuses || []).map((s) => {
+                const opt = statusOptions.find((o) => o.value === s);
+                return { label: opt?.label || s, value: s };
+              })}
+              onChange={(vals) => onFieldChange('doneStatuses', vals.map((v) => v.value || ''))}
+              isClearable
+              placeholder="Auto-detect from Jira"
+            />
+          </InlineField>
+        </>
       )}
     </>
   );
