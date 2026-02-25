@@ -119,6 +119,7 @@ type JiraChangelogHistory struct {
 // JiraChangelogItem represents a single field change in a changelog entry.
 type JiraChangelogItem struct {
 	Field      string `json:"field"`
+	FieldID    string `json:"fieldId"`
 	FieldType  string `json:"fieldtype"`
 	From       string `json:"from"`
 	FromString string `json:"fromString"`

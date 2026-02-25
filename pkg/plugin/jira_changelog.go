@@ -40,7 +40,7 @@ func (d *Datasource) handleChangelog(ctx context.Context, query JiraQuery, _ bac
 				if len(query.Fields) > 0 {
 					match := false
 					for _, f := range query.Fields {
-						if f == item.Field {
+						if f == item.Field || f == item.FieldID {
 							match = true
 							break
 						}

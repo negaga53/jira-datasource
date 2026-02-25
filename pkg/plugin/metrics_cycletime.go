@@ -133,10 +133,8 @@ func computeCycleTime(issue JiraIssue, startStatus, endStatus string) *CycleTime
 	}
 
 	record := &CycleTimeRecord{
-		Key:         issue.Key,
-		IssueType:   extractNestedName(issue.Fields, "issuetype"),
-		StartStatus: startStatus,
-		EndStatus:   endStatus,
+		Key:       issue.Key,
+		IssueType: extractNestedName(issue.Fields, "issuetype"),
 	}
 
 	foundStart := false
@@ -160,10 +158,12 @@ func computeCycleTime(issue JiraIssue, startStatus, endStatus string) *CycleTime
 			// Match by status ID first, fall back to localized name for backward compatibility
 			if !foundStart && (item.To == startStatus || item.ToString == startStatus) {
 				record.StartDate = t
+				record.StartStatus = item.ToString // display the human-readable name
 				foundStart = true
 			}
 			if foundStart && (item.To == endStatus || item.ToString == endStatus) {
 				record.EndDate = t
+				record.EndStatus = item.ToString // display the human-readable name
 				foundEnd = true
 				break
 			}
