@@ -157,11 +157,12 @@ func computeCycleTime(issue JiraIssue, startStatus, endStatus string) *CycleTime
 			if item.Field != "status" {
 				continue
 			}
-			if !foundStart && item.ToString == startStatus {
+			// Match by status ID first, fall back to localized name for backward compatibility
+			if !foundStart && (item.To == startStatus || item.ToString == startStatus) {
 				record.StartDate = t
 				foundStart = true
 			}
-			if foundStart && item.ToString == endStatus {
+			if foundStart && (item.To == endStatus || item.ToString == endStatus) {
 				record.EndDate = t
 				foundEnd = true
 				break

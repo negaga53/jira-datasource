@@ -204,25 +204,35 @@ func TestComputeCycleTime(t *testing.T) {
 				{
 					Created: "2024-01-10T10:00:00.000+0000",
 					Items: []JiraChangelogItem{
-						{Field: "status", ToString: "In Progress"},
+						{Field: "status", To: "3", ToString: "In Progress"},
 					},
 				},
 				{
 					Created: "2024-01-13T10:00:00.000+0000",
 					Items: []JiraChangelogItem{
-						{Field: "status", ToString: "Done"},
+						{Field: "status", To: "10001", ToString: "Done"},
 					},
 				},
 			},
 		},
 	}
 
-	record := computeCycleTime(issue, "In Progress", "Done")
+	// Match by status ID
+	record := computeCycleTime(issue, "3", "10001")
 	if record == nil {
-		t.Fatal("computeCycleTime() returned nil")
+		t.Fatal("computeCycleTime() with IDs returned nil")
 	}
 	if record.CycleTimeDays != 3.0 {
 		t.Errorf("CycleTimeDays = %f, want 3.0", record.CycleTimeDays)
+	}
+
+	// Backward compatibility: match by localized name
+	record2 := computeCycleTime(issue, "In Progress", "Done")
+	if record2 == nil {
+		t.Fatal("computeCycleTime() with names returned nil")
+	}
+	if record2.CycleTimeDays != 3.0 {
+		t.Errorf("CycleTimeDays = %f, want 3.0", record2.CycleTimeDays)
 	}
 }
 

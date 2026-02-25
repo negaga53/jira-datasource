@@ -61,13 +61,13 @@ func (d *Datasource) handleStatuses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Deduplicate statuses by name
+	// Deduplicate statuses by name, use ID as Value for locale-independent matching
 	seen := make(map[string]bool)
 	var options []SelectOption
 	for _, s := range statuses {
 		if !seen[s.Name] {
 			seen[s.Name] = true
-			options = append(options, SelectOption{Value: s.Name, Label: s.Name})
+			options = append(options, SelectOption{Value: s.ID, Label: s.Name})
 		}
 	}
 

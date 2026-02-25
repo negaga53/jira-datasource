@@ -120,7 +120,9 @@ type JiraChangelogHistory struct {
 type JiraChangelogItem struct {
 	Field      string `json:"field"`
 	FieldType  string `json:"fieldtype"`
+	From       string `json:"from"`
 	FromString string `json:"fromString"`
+	To         string `json:"to"`
 	ToString   string `json:"toString"`
 }
 
@@ -148,8 +150,9 @@ type JiraField struct {
 
 // JiraStatus represents a Jira status.
 type JiraStatus struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID               string `json:"id"`
+	Name             string `json:"name"`
+	UntranslatedName string `json:"untranslatedName,omitempty"`
 }
 
 // JiraIssueType represents a Jira issue type.

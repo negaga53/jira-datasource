@@ -122,7 +122,10 @@ export function QueryEditor(props: Props) {
           <MultiSelect
             width={40}
             options={fieldOptions}
-            value={(q.fields || []).map((f) => ({ label: f, value: f }))}
+            value={(q.fields || []).map((f) => {
+              const opt = fieldOptions.find((o) => o.value === f);
+              return { label: opt?.label || f, value: f };
+            })}
             onChange={(vals) => onFieldChange('fields', vals.map((v) => v.value || ''))}
             isClearable
           />
@@ -135,7 +138,10 @@ export function QueryEditor(props: Props) {
           <MultiSelect
             width={40}
             options={fieldOptions}
-            value={(q.fields || []).map((f) => ({ label: f, value: f }))}
+            value={(q.fields || []).map((f) => {
+              const opt = fieldOptions.find((o) => o.value === f);
+              return { label: opt?.label || f, value: f };
+            })}
             onChange={(vals) => onFieldChange('fields', vals.map((v) => v.value || ''))}
             isClearable
           />
