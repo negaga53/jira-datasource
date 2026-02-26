@@ -59,23 +59,22 @@ func (d *Datasource) handleSprintBurndown(ctx context.Context, query JiraQuery, 
 		return nil, fmt.Errorf("burndown fetch changelogs: %w", err)
 	}
 
+	// Fetch all statuses so we can resolve names to IDs and localized forms
+	allStatuses, _ := d.jiraClient.GetStatuses(ctx)
+
 	// Determine which statuses are "done"
-	doneSet := make(map[string]bool)
-	for _, s := range query.DoneStatuses {
-		doneSet[s] = true
-		doneSet[normalizeString(s)] = true
-	}
-	// If no done statuses specified, fetch from Jira and use "done" category
-	if len(doneSet) == 0 {
-		statuses, err := d.jiraClient.GetStatuses(ctx)
-		if err == nil {
-			for _, s := range statuses {
-				if s.StatusCategory.Key == "done" {
-					doneSet[normalizeString(s.Name)] = true
-					doneSet[s.ID] = true
-				}
+	var doneMatcher *statusMatcher
+	if len(query.DoneStatuses) > 0 {
+		doneMatcher = newStatusMatcher(query.DoneStatuses, allStatuses)
+	} else {
+		// If no done statuses specified, use "done" category
+		var doneNames []string
+		for _, s := range allStatuses {
+			if s.StatusCategory.Key == "done" {
+				doneNames = append(doneNames, s.EnglishName())
 			}
 		}
+		doneMatcher = newStatusMatcher(doneNames, allStatuses)
 	}
 
 	usePoints := query.StoryPointField != ""
@@ -177,7 +176,7 @@ func (d *Datasource) handleSprintBurndown(ctx context.Context, query JiraQuery, 
 				if ev.time.After(bt.Add(interval)) {
 					break
 				}
-				isDone = doneSet[ev.statusID] || doneSet[ev.status]
+				isDone = doneMatcher.MatchesStatus(ev.statusID) || doneMatcher.MatchesStatus(ev.status)
 			}
 			if isDone {
 				completed += info.storyPoints

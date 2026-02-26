@@ -178,6 +178,68 @@ type JiraStatus struct {
 	StatusCategory   JiraStatusCategory `json:"statusCategory,omitempty"`
 }
 
+// EnglishName returns the untranslated (English) status name, falling back to
+// the localized Name when UntranslatedName is not available.
+func (s JiraStatus) EnglishName() string {
+	if s.UntranslatedName != "" {
+		return s.UntranslatedName
+	}
+	return s.Name
+}
+
+// statusMatcher builds a set of all known representations for a list of status
+// names (English, localized, or IDs) so that changelog item.To and
+// item.ToString can be matched reliably regardless of locale.
+type statusMatcher struct {
+	matchSet map[string]bool
+}
+
+// newStatusMatcher creates a matcher. For each name in queryStatuses it adds
+// the English name, the localized name, and the status ID to the match set.
+func newStatusMatcher(queryStatuses []string, allStatuses []JiraStatus) *statusMatcher {
+	// Index statuses by every known representation.
+	type statusInfo struct {
+		id, name, english string
+	}
+	byKey := make(map[string][]statusInfo)
+	for _, s := range allStatuses {
+		info := statusInfo{id: s.ID, name: normalizeString(s.Name), english: normalizeString(s.EnglishName())}
+		byKey[s.ID] = append(byKey[s.ID], info)
+		byKey[normalizeString(s.Name)] = append(byKey[normalizeString(s.Name)], info)
+		byKey[normalizeString(s.EnglishName())] = append(byKey[normalizeString(s.EnglishName())], info)
+	}
+
+	matchSet := make(map[string]bool)
+	for _, qs := range queryStatuses {
+		key := normalizeString(qs)
+		matchSet[qs] = true
+		matchSet[key] = true
+		for _, info := range byKey[qs] {
+			matchSet[info.id] = true
+			matchSet[info.name] = true
+			matchSet[info.english] = true
+		}
+		for _, info := range byKey[key] {
+			matchSet[info.id] = true
+			matchSet[info.name] = true
+			matchSet[info.english] = true
+		}
+	}
+	return &statusMatcher{matchSet: matchSet}
+}
+
+// Matches returns true if the changelog item's To (ID) or ToString (name)
+// corresponds to one of the statuses tracked by this matcher.
+func (m *statusMatcher) Matches(item JiraChangelogItem) bool {
+	return m.matchSet[item.To] || m.matchSet[normalizeString(item.ToString)]
+}
+
+// MatchesStatus returns true if the given status string (ID or name) is in the
+// match set.
+func (m *statusMatcher) MatchesStatus(s string) bool {
+	return m.matchSet[s] || m.matchSet[normalizeString(s)]
+}
+
 // JiraStatusCategory represents a Jira status category.
 type JiraStatusCategory struct {
 	ID   int    `json:"id"`

@@ -28,13 +28,18 @@ func (d *Datasource) handleCycleTime(ctx context.Context, query JiraQuery, _ bac
 		return nil, fmt.Errorf("fetch changelogs: %w", err)
 	}
 
+	// Resolve status names to all known representations (ID, localized, English)
+	allStatuses, _ := d.jiraClient.GetStatuses(ctx)
+	startMatcher := newStatusMatcher([]string{query.StartStatus}, allStatuses)
+	endMatcher := newStatusMatcher([]string{query.EndStatus}, allStatuses)
+
 	// Compute cycle times
 	var records []CycleTimeRecord
 	for _, issue := range issues {
 		if issue.Changelog == nil {
 			continue
 		}
-		record := computeCycleTime(issue, query.StartStatus, query.EndStatus)
+		record := computeCycleTime(issue, startMatcher, endMatcher)
 		if record != nil {
 			records = append(records, *record)
 		}
@@ -84,7 +89,7 @@ func (d *Datasource) handleCycleTime(ctx context.Context, query JiraQuery, _ bac
 }
 
 // computeCycleTime calculates the cycle time for a single issue.
-func computeCycleTime(issue JiraIssue, startStatus, endStatus string) *CycleTimeRecord {
+func computeCycleTime(issue JiraIssue, startMatcher, endMatcher *statusMatcher) *CycleTimeRecord {
 	if issue.Changelog == nil {
 		return nil
 	}
@@ -112,18 +117,14 @@ func computeCycleTime(issue JiraIssue, startStatus, endStatus string) *CycleTime
 			if !item.isStatusChange() {
 				continue
 			}
-			toString := normalizeString(item.ToString)
-			normStart := normalizeString(startStatus)
-			normEnd := normalizeString(endStatus)
-			// Match by status ID first, fall back to localized name for backward compatibility
-			if !foundStart && (item.To == startStatus || toString == normStart) {
+			if !foundStart && startMatcher.Matches(item) {
 				record.StartDate = t
-				record.StartStatus = item.ToString // display the human-readable name
+				record.StartStatus = item.ToString
 				foundStart = true
 			}
-			if foundStart && (item.To == endStatus || toString == normEnd) {
+			if foundStart && endMatcher.Matches(item) {
 				record.EndDate = t
-				record.EndStatus = item.ToString // display the human-readable name
+				record.EndStatus = item.ToString
 				foundEnd = true
 				break
 			}

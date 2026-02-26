@@ -217,8 +217,15 @@ func TestComputeCycleTime(t *testing.T) {
 		},
 	}
 
+	allStatuses := []JiraStatus{
+		{ID: "3", Name: "In Progress", UntranslatedName: "In Progress"},
+		{ID: "10001", Name: "Done", UntranslatedName: "Done"},
+	}
+
 	// Match by status ID
-	record := computeCycleTime(issue, "3", "10001")
+	startM := newStatusMatcher([]string{"3"}, allStatuses)
+	endM := newStatusMatcher([]string{"10001"}, allStatuses)
+	record := computeCycleTime(issue, startM, endM)
 	if record == nil {
 		t.Fatal("computeCycleTime() with IDs returned nil")
 	}
@@ -227,12 +234,31 @@ func TestComputeCycleTime(t *testing.T) {
 	}
 
 	// Backward compatibility: match by localized name
-	record2 := computeCycleTime(issue, "In Progress", "Done")
+	startM2 := newStatusMatcher([]string{"In Progress"}, allStatuses)
+	endM2 := newStatusMatcher([]string{"Done"}, allStatuses)
+	record2 := computeCycleTime(issue, startM2, endM2)
 	if record2 == nil {
 		t.Fatal("computeCycleTime() with names returned nil")
 	}
 	if record2.CycleTimeDays != 3.0 {
 		t.Errorf("CycleTimeDays = %f, want 3.0", record2.CycleTimeDays)
+	}
+
+	// Cross-locale: English name resolves to localized changelog entry
+	localizedStatuses := []JiraStatus{
+		{ID: "3", Name: "En cours", UntranslatedName: "In Progress"},
+		{ID: "10001", Name: "Terminé(e)", UntranslatedName: "Done"},
+	}
+	startM3 := newStatusMatcher([]string{"In Progress"}, localizedStatuses)
+	endM3 := newStatusMatcher([]string{"Done"}, localizedStatuses)
+	// The changelog has ToString="In Progress" and "Done" (English), but the
+	// matcher resolves English→ID so item.To matches.
+	record3 := computeCycleTime(issue, startM3, endM3)
+	if record3 == nil {
+		t.Fatal("computeCycleTime() with English names on localized statuses returned nil")
+	}
+	if record3.CycleTimeDays != 3.0 {
+		t.Errorf("CycleTimeDays = %f, want 3.0", record3.CycleTimeDays)
 	}
 }
 
