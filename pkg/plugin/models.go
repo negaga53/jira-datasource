@@ -3,9 +3,11 @@ package plugin
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"golang.org/x/text/unicode/norm"
 )
 
 // QueryType enumerates the supported query types.
@@ -132,6 +134,18 @@ type JiraChangelogItem struct {
 	FromString string `json:"fromString"`
 	To         string `json:"to"`
 	ToString   string `json:"toString"`
+}
+
+// isStatusChange checks whether a changelog item is a status change,
+// handling both the internal field ID and potentially localized field names.
+func (item JiraChangelogItem) isStatusChange() bool {
+	return strings.EqualFold(item.Field, "status") || item.FieldID == "status"
+}
+
+// normalizeString applies Unicode NFC normalization to ensure
+// accented characters (e.g. é) match regardless of encoding form.
+func normalizeString(s string) string {
+	return norm.NFC.String(s)
 }
 
 // JiraUser represents a Jira user.

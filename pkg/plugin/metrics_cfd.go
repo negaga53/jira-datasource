@@ -83,7 +83,7 @@ func (d *Datasource) handleCFD(ctx context.Context, query JiraQuery, tr backend.
 					continue
 				}
 				for _, item := range h.Items {
-					if item.Field != "status" {
+					if !item.isStatusChange() {
 						continue
 					}
 					statusSet[item.ToString] = true
@@ -95,7 +95,7 @@ func (d *Datasource) handleCFD(ctx context.Context, query JiraQuery, tr backend.
 			if len(events) > 0 {
 				for _, h := range histories {
 					for _, item := range h.Items {
-						if item.Field == "status" {
+						if item.isStatusChange() {
 							initialStatus = item.FromString
 							goto foundInitial
 						}

@@ -109,16 +109,19 @@ func computeCycleTime(issue JiraIssue, startStatus, endStatus string) *CycleTime
 			continue
 		}
 		for _, item := range history.Items {
-			if item.Field != "status" {
+			if !item.isStatusChange() {
 				continue
 			}
+			toString := normalizeString(item.ToString)
+			normStart := normalizeString(startStatus)
+			normEnd := normalizeString(endStatus)
 			// Match by status ID first, fall back to localized name for backward compatibility
-			if !foundStart && (item.To == startStatus || item.ToString == startStatus) {
+			if !foundStart && (item.To == startStatus || toString == normStart) {
 				record.StartDate = t
 				record.StartStatus = item.ToString // display the human-readable name
 				foundStart = true
 			}
-			if foundStart && (item.To == endStatus || item.ToString == endStatus) {
+			if foundStart && (item.To == endStatus || toString == normEnd) {
 				record.EndDate = t
 				record.EndStatus = item.ToString // display the human-readable name
 				foundEnd = true

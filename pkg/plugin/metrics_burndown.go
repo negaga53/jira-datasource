@@ -63,6 +63,7 @@ func (d *Datasource) handleSprintBurndown(ctx context.Context, query JiraQuery, 
 	doneSet := make(map[string]bool)
 	for _, s := range query.DoneStatuses {
 		doneSet[s] = true
+		doneSet[normalizeString(s)] = true
 	}
 	// If no done statuses specified, fetch from Jira and use "done" category
 	if len(doneSet) == 0 {
@@ -70,7 +71,7 @@ func (d *Datasource) handleSprintBurndown(ctx context.Context, query JiraQuery, 
 		if err == nil {
 			for _, s := range statuses {
 				if s.StatusCategory.Key == "done" {
-					doneSet[s.Name] = true
+					doneSet[normalizeString(s.Name)] = true
 					doneSet[s.ID] = true
 				}
 			}
@@ -119,8 +120,8 @@ func (d *Datasource) handleSprintBurndown(ctx context.Context, query JiraQuery, 
 					continue
 				}
 				for _, item := range h.Items {
-					if item.Field == "status" {
-						events = append(events, burndownEvent{time: t, statusID: item.To, status: item.ToString})
+					if item.isStatusChange() {
+						events = append(events, burndownEvent{time: t, statusID: item.To, status: normalizeString(item.ToString)})
 					}
 				}
 			}
