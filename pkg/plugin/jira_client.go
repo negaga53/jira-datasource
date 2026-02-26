@@ -208,21 +208,41 @@ func (c *JiraClient) searchPage(ctx context.Context, jql string, fields []string
 	return &resp, nil
 }
 
-// GetIssueChangelog fetches the changelog for a single issue.
+// GetIssueChangelog fetches the full changelog for a single issue, handling pagination.
 func (c *JiraClient) GetIssueChangelog(ctx context.Context, issueKey string) ([]JiraChangelogHistory, error) {
 	endpoint := fmt.Sprintf("/issue/%s/changelog", issueKey)
-	data, err := c.Get(ctx, endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
+	var all []JiraChangelogHistory
+	startAt := 0
 
-	var resp struct {
-		Values []JiraChangelogHistory `json:"values"`
+	for {
+		params := url.Values{
+			"startAt":    {strconv.Itoa(startAt)},
+			"maxResults": {strconv.Itoa(100)},
+		}
+		raw, err := c.Get(ctx, endpoint, params)
+		if err != nil {
+			return nil, err
+		}
+
+		var resp struct {
+			StartAt    int                    `json:"startAt"`
+			MaxResults int                    `json:"maxResults"`
+			Total      int                    `json:"total"`
+			IsLast     bool                   `json:"isLast"`
+			Values     []JiraChangelogHistory `json:"values"`
+		}
+		if err := json.Unmarshal(raw, &resp); err != nil {
+			return nil, fmt.Errorf("parse changelog response: %w", err)
+		}
+
+		all = append(all, resp.Values...)
+
+		if resp.IsLast || len(resp.Values) == 0 || len(all) >= resp.Total {
+			break
+		}
+		startAt += len(resp.Values)
 	}
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, fmt.Errorf("parse changelog response: %w", err)
-	}
-	return resp.Values, nil
+	return all, nil
 }
 
 // GetIssueWorklogs fetches worklogs for a single issue.

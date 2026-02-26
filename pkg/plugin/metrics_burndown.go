@@ -81,9 +81,14 @@ func (d *Datasource) handleSprintBurndown(ctx context.Context, query JiraQuery, 
 
 	// Compute total scope
 	var totalScope float64
+	type burndownEvent struct {
+		time     time.Time
+		statusID string
+		status   string
+	}
 	type issueInfo struct {
 		storyPoints float64
-		events      []statusEvent
+		events      []burndownEvent
 		created     time.Time
 	}
 	var issueInfos []issueInfo
@@ -102,7 +107,7 @@ func (d *Datasource) handleSprintBurndown(ctx context.Context, query JiraQuery, 
 		createdStr := extractString(issue.Fields, "created")
 		created, _ := parseJiraTime(createdStr)
 
-		var events []statusEvent
+		var events []burndownEvent
 		if issue.Changelog != nil {
 			histories := issue.Changelog.Histories
 			sort.Slice(histories, func(i, j int) bool {
@@ -115,7 +120,7 @@ func (d *Datasource) handleSprintBurndown(ctx context.Context, query JiraQuery, 
 				}
 				for _, item := range h.Items {
 					if item.Field == "status" {
-						events = append(events, statusEvent{time: t, status: item.ToString})
+						events = append(events, burndownEvent{time: t, statusID: item.To, status: item.ToString})
 					}
 				}
 			}
@@ -171,7 +176,7 @@ func (d *Datasource) handleSprintBurndown(ctx context.Context, query JiraQuery, 
 				if ev.time.After(bt.Add(interval)) {
 					break
 				}
-				isDone = doneSet[ev.status]
+				isDone = doneSet[ev.statusID] || doneSet[ev.status]
 			}
 			if isDone {
 				completed += info.storyPoints
