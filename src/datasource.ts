@@ -58,7 +58,8 @@ export class JiraDataSource extends DataSourceWithBackend<JiraQuery, JiraDataSou
         path = `sprints?board=${encodeURIComponent(boardId)}`;
         break;
       case 'users':
-        path = 'users';
+        const projectKey = getTemplateSrv().replace(query.projectKey || '');
+        path = `users?project=${encodeURIComponent(projectKey)}`;
         break;
       default:
         return [];

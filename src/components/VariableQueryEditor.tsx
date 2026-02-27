@@ -56,6 +56,19 @@ export function VariableQueryEditor({ query, onChange }: Props) {
           />
         </InlineField>
       )}
+
+      {query.queryType === 'users' && (
+        <InlineField label="Project Key" labelWidth={16} tooltip="Project to fetch assignable users for (supports variables like $project)">
+          <Input
+            width={20}
+            value={query.projectKey || ''}
+            placeholder="$project or PROJ"
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              onChange({ ...query, projectKey: e.target.value })
+            }
+          />
+        </InlineField>
+      )}
     </>
   );
 }

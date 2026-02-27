@@ -166,13 +166,19 @@ func (d *Datasource) handleBoards(w http.ResponseWriter, r *http.Request) {
 
 func (d *Datasource) handleUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	project := r.URL.Query().Get("project")
+	if project == "" {
+		http.Error(w, "project query parameter is required", http.StatusBadRequest)
+		return
+	}
 
-	if cached, ok := d.cache.Get("users"); ok {
+	cacheKey := "users:" + project
+	if cached, ok := d.cache.Get(cacheKey); ok {
 		writeJSON(w, cached)
 		return
 	}
 
-	users, err := d.jiraClient.GetUsers(ctx)
+	users, err := d.jiraClient.GetUsers(ctx, project)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -193,7 +199,7 @@ func (d *Datasource) handleUsers(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	d.cache.Set("users", options)
+	d.cache.Set(cacheKey, options)
 	writeJSON(w, options)
 }
 

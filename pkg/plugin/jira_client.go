@@ -140,17 +140,17 @@ func (c *JiraClient) Post(ctx context.Context, endpoint string, body io.Reader) 
 	return io.ReadAll(resp.Body)
 }
 
-// GetUsers fetches all users from Jira using the user search endpoint.
-func (c *JiraClient) GetUsers(ctx context.Context) ([]JiraUser, error) {
+// GetUsers fetches users assignable to issues in the given project.
+func (c *JiraClient) GetUsers(ctx context.Context, projectKey string) ([]JiraUser, error) {
 	var all []JiraUser
 	startAt := 0
 	for {
 		params := url.Values{
-			"query":      {""},
+			"projectKey": {projectKey},
 			"startAt":    {strconv.Itoa(startAt)},
 			"maxResults": {"50"},
 		}
-		data, err := c.Get(ctx, "/user/search", params)
+		data, err := c.Get(ctx, "/user/assignable/search", params)
 		if err != nil {
 			return nil, fmt.Errorf("get users: %w", err)
 		}
