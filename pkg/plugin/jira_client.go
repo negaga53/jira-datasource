@@ -146,7 +146,7 @@ func (c *JiraClient) GetUsers(ctx context.Context, projectKey string) ([]JiraUse
 	startAt := 0
 	for {
 		params := url.Values{
-			"projectKey": {projectKey},
+			"project":    {projectKey},
 			"startAt":    {strconv.Itoa(startAt)},
 			"maxResults": {"50"},
 		}
