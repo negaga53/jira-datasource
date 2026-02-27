@@ -22,8 +22,8 @@ export interface JiraQuery extends DataQuery {
   expand?: string[];
   maxResults?: number;
   storyPointField?: string;
-  boardId?: number;
-  sprintId?: number;
+  boardId?: number | string;
+  sprintId?: number | string;
   doneStatuses?: string[];
 }
 
@@ -52,7 +52,7 @@ export interface SelectOption {
 }
 
 export interface VariableQuery {
-  queryType: 'projects' | 'statuses' | 'fields' | 'issuetypes' | 'labels' | 'boards' | 'sprints';
+  queryType: 'projects' | 'statuses' | 'fields' | 'issuetypes' | 'labels' | 'boards' | 'sprints' | 'users';
   projectKey?: string;
   boardId?: string;
 }

@@ -16,10 +16,14 @@ export class JiraDataSource extends DataSourceWithBackend<JiraQuery, JiraDataSou
   /** Apply template variable substitution to JQL before sending to backend. */
   applyTemplateVariables(query: JiraQuery, scopedVars: Record<string, { text: string; value: string }>): JiraQuery {
     const templateSrv = getTemplateSrv();
+    const boardIdRaw = templateSrv.replace(String(query.boardId ?? ''), scopedVars);
+    const sprintIdRaw = templateSrv.replace(String(query.sprintId ?? ''), scopedVars);
     return {
       ...defaultQuery,
       ...query,
       jql: templateSrv.replace(query.jql || '', scopedVars),
+      boardId: boardIdRaw ? parseInt(boardIdRaw, 10) || undefined : undefined,
+      sprintId: sprintIdRaw ? parseInt(sprintIdRaw, 10) || undefined : undefined,
     };
   }
 
@@ -50,7 +54,11 @@ export class JiraDataSource extends DataSourceWithBackend<JiraQuery, JiraDataSou
         path = 'boards';
         break;
       case 'sprints':
-        path = `sprints?board=${encodeURIComponent(query.boardId || '')}`;
+        const boardId = getTemplateSrv().replace(query.boardId || '');
+        path = `sprints?board=${encodeURIComponent(boardId)}`;
+        break;
+      case 'users':
+        path = 'users';
         break;
       default:
         return [];

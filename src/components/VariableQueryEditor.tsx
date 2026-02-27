@@ -14,6 +14,9 @@ const variableQueryTypeOptions: Array<SelectableValue<VariableQuery['queryType']
   { label: 'Fields', value: 'fields' },
   { label: 'Issue Types', value: 'issuetypes' },
   { label: 'Labels', value: 'labels' },
+  { label: 'Boards', value: 'boards' },
+  { label: 'Sprints', value: 'sprints' },
+  { label: 'Users', value: 'users' },
 ];
 
 export function VariableQueryEditor({ query, onChange }: Props) {
@@ -36,6 +39,19 @@ export function VariableQueryEditor({ query, onChange }: Props) {
             placeholder="PROJ"
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               onChange({ ...query, projectKey: e.target.value })
+            }
+          />
+        </InlineField>
+      )}
+
+      {query.queryType === 'sprints' && (
+        <InlineField label="Board ID" labelWidth={16} tooltip="Board ID to fetch sprints for (supports variables like $board)">
+          <Input
+            width={20}
+            value={query.boardId || ''}
+            placeholder="$board or 42"
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              onChange({ ...query, boardId: e.target.value })
             }
           />
         </InlineField>

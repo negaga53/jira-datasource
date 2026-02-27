@@ -140,6 +140,33 @@ func (c *JiraClient) Post(ctx context.Context, endpoint string, body io.Reader) 
 	return io.ReadAll(resp.Body)
 }
 
+// GetUsers fetches all users from Jira using the user search endpoint.
+func (c *JiraClient) GetUsers(ctx context.Context) ([]JiraUser, error) {
+	var all []JiraUser
+	startAt := 0
+	for {
+		params := url.Values{
+			"query":      {""},
+			"startAt":    {strconv.Itoa(startAt)},
+			"maxResults": {"50"},
+		}
+		data, err := c.Get(ctx, "/user/search", params)
+		if err != nil {
+			return nil, fmt.Errorf("get users: %w", err)
+		}
+		var users []JiraUser
+		if err := json.Unmarshal(data, &users); err != nil {
+			return nil, fmt.Errorf("parse users: %w", err)
+		}
+		all = append(all, users...)
+		if len(users) < 50 {
+			break
+		}
+		startAt += len(users)
+	}
+	return all, nil
+}
+
 // GetMyself calls /rest/api/{v}/myself for health checking.
 func (c *JiraClient) GetMyself(ctx context.Context) (*JiraUser, error) {
 	data, err := c.Get(ctx, "/myself", nil)

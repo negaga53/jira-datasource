@@ -1,6 +1,7 @@
 import React, { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { InlineField, Input, Select, MultiSelect, TextArea } from '@grafana/ui';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
+import { getTemplateSrv } from '@grafana/runtime';
 import { JiraDataSource } from '../datasource';
 import { JiraDataSourceOptions, JiraQuery, QueryType, SelectOption, defaultQuery } from '../types';
 
@@ -48,11 +49,20 @@ export function QueryEditor(props: Props) {
     }).catch(() => {});
   }, [datasource]);
 
-  // Load sprints when board changes
+  // Load sprints when board changes (resolves template variables)
   useEffect(() => {
-    if (q.boardId) {
+    if (!q.boardId) {
+      setSprintOptions([]);
+      return;
+    }
+
+    const boardIdStr = String(q.boardId);
+    const resolved = boardIdStr.includes('$') ? getTemplateSrv().replace(boardIdStr) : boardIdStr;
+    const boardIdNum = parseInt(resolved, 10);
+
+    if (!isNaN(boardIdNum)) {
       datasource
-        .getResource<SelectOption[]>('sprints', { board: String(q.boardId) })
+        .getResource<SelectOption[]>('sprints', { board: String(boardIdNum) })
         .then((opts) => {
           setSprintOptions((opts || []).map((o) => ({ label: o.label, value: o.value })));
         })
@@ -182,7 +192,7 @@ export function QueryEditor(props: Props) {
               onChange={(v) => onFieldChange('interval', v.value || '1w')}
             />
           </InlineField>
-          <InlineField label="Story Point Field" labelWidth={16} tooltip="Custom field for story points (optional, leave empty for count only)">
+          <InlineField label="Story Point" labelWidth={16} tooltip="Custom field for story points (optional, leave empty for count only)">
             <Select
               width={40}
               options={fieldOptions}
@@ -206,7 +216,7 @@ export function QueryEditor(props: Props) {
               onChange={(v) => onFieldChange('interval', v.value || '1d')}
             />
           </InlineField>
-          <InlineField label="Story Point Field" labelWidth={16} tooltip="Use story points instead of issue count (optional)">
+          <InlineField label="Story Point" labelWidth={16} tooltip="Use story points instead of issue count (optional)">
             <Select
               width={40}
               options={fieldOptions}
@@ -222,27 +232,35 @@ export function QueryEditor(props: Props) {
       {/* Sprint Burndown fields */}
       {q.queryType === QueryType.SPRINT_BURNDOWN && (
         <>
-          <InlineField label="Board" labelWidth={16} tooltip="Jira Agile board">
+          <InlineField label="Board" labelWidth={16} tooltip="Jira Agile board (supports variables like $board)">
             <Select
               width={40}
               options={boardOptions}
-              value={boardOptions.find((o) => o.value === String(q.boardId || ''))}
-              onChange={(v) => onFieldChange('boardId', parseInt(v.value || '0', 10) || undefined)}
+              value={
+                boardOptions.find((o) => o.value === String(q.boardId || '')) ??
+                (q.boardId != null ? { label: String(q.boardId), value: String(q.boardId) } : null)
+              }
+              onChange={(v) => onFieldChange('boardId', v?.value || undefined)}
               isClearable
-              placeholder="Select board..."
+              allowCustomValue
+              placeholder="Select board or type $variable..."
             />
           </InlineField>
-          <InlineField label="Sprint" labelWidth={16} tooltip="Sprint to chart">
+          <InlineField label="Sprint" labelWidth={16} tooltip="Sprint to chart (supports variables like $sprint)">
             <Select
               width={40}
               options={sprintOptions}
-              value={sprintOptions.find((o) => o.value === String(q.sprintId || ''))}
-              onChange={(v) => onFieldChange('sprintId', parseInt(v.value || '0', 10) || undefined)}
+              value={
+                sprintOptions.find((o) => o.value === String(q.sprintId || '')) ??
+                (q.sprintId != null ? { label: String(q.sprintId), value: String(q.sprintId) } : null)
+              }
+              onChange={(v) => onFieldChange('sprintId', v?.value || undefined)}
               isClearable
-              placeholder="Select sprint..."
+              allowCustomValue
+              placeholder="Select sprint or type $variable..."
             />
           </InlineField>
-          <InlineField label="Story Point Field" labelWidth={16} tooltip="Use story points instead of issue count (optional)">
+          <InlineField label="Story Point" labelWidth={16} tooltip="Use story points instead of issue count (optional)">
             <Select
               width={40}
               options={fieldOptions}

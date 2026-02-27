@@ -19,6 +19,7 @@ func (d *Datasource) registerRoutes() *http.ServeMux {
 	mux.HandleFunc("/issuetypes", d.handleIssueTypes)
 	mux.HandleFunc("/boards", d.handleBoards)
 	mux.HandleFunc("/sprints", d.handleSprints)
+	mux.HandleFunc("/users", d.handleUsers)
 	return mux
 }
 
@@ -160,6 +161,39 @@ func (d *Datasource) handleBoards(w http.ResponseWriter, r *http.Request) {
 	}
 
 	d.cache.Set("boards", options)
+	writeJSON(w, options)
+}
+
+func (d *Datasource) handleUsers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if cached, ok := d.cache.Get("users"); ok {
+		writeJSON(w, cached)
+		return
+	}
+
+	users, err := d.jiraClient.GetUsers(ctx)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var options []SelectOption
+	for _, u := range users {
+		value := u.AccountID
+		if value == "" {
+			value = u.Name
+		}
+		if value == "" {
+			continue
+		}
+		options = append(options, SelectOption{
+			Value: value,
+			Label: u.DisplayName,
+		})
+	}
+
+	d.cache.Set("users", options)
 	writeJSON(w, options)
 }
 
